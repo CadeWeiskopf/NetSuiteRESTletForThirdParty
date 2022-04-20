@@ -14,11 +14,11 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
     var dateRanges;
     
     /*
-     * var: returnPayload
+     * vars: returnPayload
      * info: JSON to be constructed by getData
      *       return in post
      */
-    var returnPayload;
+    var returnPayload = {};
 
     /*
      * var: getDataFunctions
@@ -65,6 +65,9 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
      */
     function getSalesOrders() {
         logMessage('GET SALES ORDERS', 'getSalesOrders()');
+        var salesOrdersJson = {};
+        var listOfSalesOrders = [];
+        var saleOrder = {};
     }
 
     /*
