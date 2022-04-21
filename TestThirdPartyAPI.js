@@ -26,7 +26,8 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
      *       function getData uses this to process requests
      */
     var getDataFunctions = {
-        salesorder: function() { getSalesOrders(); }
+        inventory: function () { getInventory(); },
+        salesorder: function () { getSalesOrders(); }
     }
 
     /*
@@ -43,7 +44,7 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
 
         getData(); 
 
-        return 'dataRequested=' + dataRequested.toString() + ' dataRanges=' + dateRanges.toString();
+        return returnPayload;
     }
 
     /*
@@ -59,6 +60,36 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
     }
 
     /*
+     * function: getInventory
+     * info: get items using N/search
+     *       
+     */
+    function getInventory() {
+        logMessage('GET INVENTORY', 'getInventory()');
+        var inventoryJson = {};
+        var listOfItems = [];
+        var item = {};
+
+        var itemSearch = search.load({
+            id: 2080
+        });
+
+        itemSearch.run().each(function (result) {
+            item = {};
+            result.columns.forEach(function (column) {
+                item[column.name] = result.getValue(column);
+            });
+            logMessage('ITEM', JSON.stringify(item));
+            listOfItems.push(item);
+            return true;
+        });
+
+        returnPayload['inventory'] = listOfItems;
+
+        logMessage('LIST OF ' + listOfItems.length + ' ITEMS', listOfItems.toString());
+    }
+
+    /*
      * function: getSalesOrder
      * info: get sales order using N/search
      *       uses dateRanges,
@@ -68,6 +99,9 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
         var salesOrdersJson = {};
         var listOfSalesOrders = [];
         var saleOrder = {};
+
+        // perform search
+        //var soSearch
     }
 
     /*
