@@ -31,6 +31,13 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
     }
 
     /*
+     * var: inventoryItemIDs
+     *      set in getInventory(), 
+     *      used for getSalesOrder() search
+     */
+    var inventoryItemIDs = [];
+
+    /*
      * function: post
      * info: receives HTTP post
      *       sets global vars and calls getData for handling
@@ -70,14 +77,53 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
         var listOfItems = [];
         var item = {};
 
-        var itemSearch = search.load({
-            id: 2080
+        //var itemSearch = search.load({
+        //    id: 2080
+        //});
+        //itemSearch.run().each(function (result) {
+        //    item = {};
+        //    result.columns.forEach(function (column) {
+        //        item[column.name] = result.getValue(column);
+        //    });
+        //    logMessage('ITEM', JSON.stringify(item));
+        //    listOfItems.push(item);
+        //    return true;
+        //});
+
+        var itemSearchObj = search.create({
+            type: "item",
+            filters: [
+                ["inventorylocation.name", "startswith", "verustat"], 
+                "AND", 
+                ["locationquantityonhand", "greaterthan", "0"]
+            ],
+            columns: [
+                "internalid",
+                "itemid",
+                "type",
+                search.createColumn({
+                    name: "name",
+                    join: "inventoryLocation"
+                }),
+                search.createColumn({
+                    name: "locationquantityonhand",
+                    sort: search.Sort.DESC
+                }),
+                "locationquantityavailable",
+                search.createColumn({
+                    name: "locationquantityonhand",
+                    sort: search.Sort.DESC
+                })
+            ]
         });
 
-        itemSearch.run().each(function (result) {
+        itemSearchObj.run().each(function (result) {
             item = {};
             result.columns.forEach(function (column) {
                 item[column.name] = result.getValue(column);
+                if (column.name == 'internalid') {
+                    inventoryItemIDs.push(result.getValue(column));
+                }
             });
             logMessage('ITEM', JSON.stringify(item));
             listOfItems.push(item);
@@ -87,6 +133,7 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
         returnPayload['inventory'] = listOfItems;
 
         logMessage('LIST OF ' + listOfItems.length + ' ITEMS', listOfItems.toString());
+        logMessage('LIST OF ITEM IDs', inventoryItemIDs.toString());
     }
 
     /*
@@ -100,8 +147,56 @@ define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
         var listOfSalesOrders = [];
         var saleOrder = {};
 
-        // perform search
-        //var soSearch
+        var salesOrderSearchObj = search.create({
+            type: "salesorder",
+            filters: [
+                ["type", "anyof", "SalesOrd"], 
+                "AND", 
+                ["anylineitem", "anyof", inventoryItemIDs/*"17829","6691","17593","18266","6818"*/],
+                "AND",
+                ["trandate", "within", dateRanges[0], dateRanges[1]],
+                "AND", 
+                ["mainline", "is", "F"]
+            ],
+            columns: [
+                search.createColumn({
+                    name: "ordertype",
+                    sort: search.Sort.ASC
+                }),
+                "trandate",
+                "tranid",
+                "item",
+                "entity",
+                "account",
+                "memo",
+                "amount",
+            ]
+        });
+         //var searchResultCount = salesorderSearchObj.runPaged().count;
+
+        var startIndex = -1000;
+
+        var salesOrderSearchResults = [];
+
+        do {
+            startIndex += 1000;
+            var salesOrderSearchPortion = salesOrderSearchObj.run().getRange({
+                start: startIndex,
+                end: startIndex + 1000
+            });
+            salesOrderSearchPortion.forEach(function (result) {
+                salesOrderSearchResults.push(result);
+            });
+        } while (salesOrderSearchPortion.length > 0); 
+
+        for (var i = 0; i < salesOrderSearchResults.length; i++) {
+            var result = salesOrderSearchResults[i];
+            result.columns.forEach(function (column) {
+                logMessage(column.name, '=' + result.getValue(column));
+            });
+        }
+
+        logMessage('SALES ORDER SEARCH LENGTH ' + salesOrderSearchResults.length, 'SALES ORDER SEARCH LENGTH ' + salesOrderSearchResults.length);
     }
 
     /*
